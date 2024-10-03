@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        
+body {
+    background-color: #e0f7fa; /* Fondo atractivo */
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 50px;
+}
+
+#difficulty-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra los elementos dentro del contenedor */
+}
+
+select {
+    width: 200px; /* Ancho del campo de selección */
+    height: 40px; /* Alto del campo de selección */
+    font-size: 1.2em; /* Aumenta el tamaño del texto */
+    margin-top: 10px; /* Espacio entre el label y el select */
+}
+
+#start-button {
+    width: 200px; /* Ancho del botón */
+    height: 50px; /* Alto del botón */
+    font-size: 1.5em; /* Aumentar tamaño del texto */
+    margin-top: 20px; /* Espacio sobre el botón */
+    background-color: #64b5f6; /* Color de fondo del botón */
+    color: white; /* Color del texto del botón */
+    border: none; /* Sin borde */
+    border-radius: 5px; /* Bordes redondeados */
+    transition: background-color 0.3s;
+}
+
+#start-button:hover {
+    background-color: #2196f3; /* Color del botón al pasar el mouse */
+}
+
+#game {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Usa fr para ser responsive */
+    grid-template-rows: repeat(3, 1fr); /* Usa fr para ser responsive */
+    gap: 10px; /* Espacio entre las celdas */
+    justify-content: center; /* Centra el tablero */
+    align-items: center; /* Alinea verticalmente */
+    width: 80vw; /* Ancho del tablero */
+    height: 80vw; /* Alto del tablero */
+    max-width: 600px; /* Ancho máximo */
+    max-height: 600px; /* Alto máximo */
+    margin: 0 auto; /* Centra el tablero horizontalmente */
+}
+
+.cell {
+    width: 100%; /* Usa todo el ancho disponible */
+    aspect-ratio: 1; /* Asegura que las celdas sean cuadradas */
+    background-color: #ffeb3b; /* Color de fondo de las celdas */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em; /* Aumentar tamaño de texto */
+    cursor: pointer;
+    border: 3px solid #f57f20; /* Color del borde */
+    border-radius: 10px; /* Bordes redondeados */
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.cell.X {
+    background-color: #a5d6a7; /* Color para 'X' */
+    color: #2e7d32; /* Color de texto para 'X' */
+}
+
+.cell.O {
+    background-color: #ef9a9a; /* Color para 'O' */
+    color: #c62828; /* Color de texto para 'O' */
+}
+
+.cell:hover {
+    transform: scale(1.1); /* Aumentar al pasar el mouse */
+}
+
+#message {
+    margin-top: 20px;
+    font-size: 2em; /* Aumentar tamaño de mensaje */
+    color: #3e2723; /* Color del mensaje */
+}
+
+button, select {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 1.2em; /* Aumentar tamaño del texto */
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#restart {
+    display: none;
+}
+    </style>
+</head>
+<body>
+
+<div id="difficulty-container">
+    <label for="difficulty">Selecciona la dificultad:</label>
+    <select id="difficulty">
+        <option value="easy">Fácil</option>
+        <option value="medium" selected>Medio</option>
+        <option value="hard">Difícil</option>
+    </select>
+    <button id="start-button" onclick="startGame()">Iniciar Juego</button>
+</div>
+
+<div id="game" style="display:none;">
+    <div class="cell" data-index="0"></div>
+    <div class="cell" data-index="1"></div>
+    <div class="cell" data-index="2"></div>
+    <div class="cell" data-index="3"></div>
+    <div class="cell" data-index="4"></div>
+    <div class="cell" data-index="5"></div>
+    <div class="cell" data-index="6"></div>
+    <div class="cell" data-index="7"></div>
+    <div class="cell" data-index="8"></div>
+</div>
+
+<div id="message"></div>
+<button id="restart" onclick="resetGame()">Reiniciar</button>
+
+<script>
+    const cells = document.querySelectorAll('.cell');
+    const message = document.getElementById('message');
+    const difficultySelect = document.getElementById('difficulty');
+    const difficultyContainer = document.getElementById('difficulty-container');
+    const gameBoard = document.getElementById('game');
+    const restartButton = document.getElementById('restart');
+    const startButton = document.getElementById('start-button');
+
+    let currentPlayer = 'X';
+    let board = ['', '', '', '', '', '', '', '', ''];
+    let gameActive = true;
+
+    const playerNames = {
+        X: 'Daniela',
+        O: 'Carlos'
+    };
+
+    const winningConditions = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
+    ];
+
+    function handleCellClick(event) {
+        const clickedCell = event.target;
+        const clickedIndex = clickedCell.getAttribute('data-index');
+
+        if (board[clickedIndex] !== '' || !gameActive || currentPlayer === 'O') {
+            return;
+        }
+
+        board[clickedIndex] = currentPlayer;
+        clickedCell.textContent = currentPlayer;
+        clickedCell.classList.add(currentPlayer);
+
+        if (checkWinner()) {
+            message.textContent = `¡${playerNames[currentPlayer]} ha ganado!`;
+            gameActive = false;
+            restartButton.style.display = 'block';
+        } else if (board.includes('') === false) {
+            message.textContent = '¡Es un empate!';
+            gameActive = false;
+            restartButton.style.display = 'block';
+        } else {
+            currentPlayer = 'O';
+            computerPlay();
+        }
+    }
+
+    function computerPlay() {
+        if (!gameActive) return;
+
+        let bestMove;
+        const difficulty = difficultySelect.value;
+
+        if (difficulty === 'easy') {
+            bestMove = getRandomMove();
+        } else if (difficulty === 'medium') {
+            bestMove = Math.random() > 0.5 ? minimax(board, 'O').index : getRandomMove();
+        } else {
+            bestMove = minimax(board, 'O').index;
+        }
+
+        board[bestMove] = 'O';
+        cells[bestMove].textContent = 'O';
+        cells[bestMove].classList.add('O');
+
+        if (checkWinner()) {
+            message.textContent = `¡${playerNames['O']} ha ganado!`;
+            gameActive = false;
+            restartButton.style.display = 'block';
+        } else if (board.includes('') === false) {
+            message.textContent = '¡Es un empate!';
+            gameActive = false;
+            restartButton.style.display = 'block';
+        } else {
+            currentPlayer = 'X';
+        }
+    }
+
+    function getRandomMove() {
+        let availableCells = board.map((val, index) => (val === '' ? index : null)).filter(val => val !== null);
+        return availableCells[Math.floor(Math.random() * availableCells.length)];
+    }
+
+    function minimax(newBoard, player) {
+        const availSpots = newBoard.map((val, index) => (val === '' ? index : null)).filter(val => val !== null);
+
+        if (checkWinnerMinimax(newBoard, 'X')) return { score: -10 };
+        else if (checkWinnerMinimax(newBoard, 'O')) return { score: 10 };
+        else if (availSpots.length === 0) return { score: 0 };
+
+        let moves = [];
+
+        for (let i = 0; i < availSpots.length; i++) {
+            let move = {};
+            move.index = availSpots[i];
+            newBoard[availSpots[i]] = player;
+
+            if (player === 'O') {
+                move.score = minimax(newBoard, 'X').score;
+            } else {
+                move.score = minimax(newBoard, 'O').score;
+            }
+
+            newBoard[availSpots[i]] = '';
+            moves.push(move);
+        }
+
+        let bestMove;
+        if (player === 'O') {
+            let bestScore = -Infinity;
+            for (let i = 0; i < moves.length; i++) {
+                if (moves[i].score > bestScore) {
+                    bestScore = moves[i].score;
+                    bestMove = i;
+                }
+            }
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i < moves.length; i++) {
+                if (moves[i].score < bestScore) {
+                    bestScore = moves[i].score;
+                    bestMove = i;
+                }
+            }
+        }
+
+        return moves[bestMove];
+    }
+
+    function checkWinner() {
+        return winningConditions.some(combination => {
+            return combination.every(index => board[index] === currentPlayer);
+        });
+    }
+
+    function checkWinnerMinimax(board, player) {
+        return winningConditions.some(combination => {
+            return combination.every(index => board[index] === player);
+        });
+    }
+
+    function resetGame() {
+        difficultyContainer.style.display = 'block';
+        gameBoard.style.display = 'none';
+        restartButton.style.display = 'none';
+        message.textContent = '';
+        currentPlayer = 'X';
+        board = ['', '', '', '', '', '', '', '', ''];
+        gameActive = true;
+        cells.forEach(cell => {
+            cell.textContent = '';
+            cell.classList.remove('X', 'O');
+        });
+    }
+
+    function startGame() {
+        difficultyContainer.style.display = 'none';
+        gameBoard.style.display = 'grid';
+    }
+
+    cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+</script>
+
+</body>
+</html>
